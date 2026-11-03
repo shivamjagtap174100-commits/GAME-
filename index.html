@@ -1,0 +1,2972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SHADOW BLADE: ANTIGRAVITY - 2D Shadow Fighting Game</title>
+  <style>
+    :root {
+      --bg-dark: #07090e;
+      --cyan-glow: #00f0ff;
+      --crimson-glow: #ff0055;
+      --gold-glow: #ffbb00;
+      --shadow-dark: #0d0f17;
+      --glass-panel: rgba(13, 17, 28, 0.85);
+      --font-cyber: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030407;
+      font-family: var(--font-cyber);
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      max-width: 177.78vh; /* 16:9 ratio */
+      max-height: 56.25vw;
+      background: #000;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 240, 255, 0.15);
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: auto;
+    }
+
+    /* UI Layer for Menus, Modals, Overlays */
+    .ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+
+    .ui-overlay.active {
+      pointer-events: auto;
+    }
+
+    /* Glass Panels */
+    .glass-card {
+      background: var(--glass-panel);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      border-radius: 12px;
+      padding: 30px 40px;
+      text-align: center;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 240, 255, 0.1);
+      max-width: 550px;
+      width: 90%;
+      animation: modalSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlideIn {
+      from { transform: translateY(20px) scale(0.96); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .brand-title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ffffff 20%, #80f0ff 60%, var(--cyan-glow) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 5px;
+      text-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+    }
+
+    .brand-subtitle {
+      font-size: 13px;
+      letter-spacing: 4px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+
+    .menu-button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .btn {
+      position: relative;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(0, 240, 255, 0.3);
+      color: #e2e8f0;
+      padding: 13px 24px;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.2), transparent);
+      transition: all 0.5s ease;
+    }
+
+    .btn:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: var(--cyan-glow);
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .btn:hover:before {
+      left: 100%;
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .btn.crimson {
+      border-color: rgba(255, 0, 85, 0.4);
+    }
+    .btn.crimson:hover {
+      background: rgba(255, 0, 85, 0.2);
+      border-color: var(--crimson-glow);
+      box-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
+    }
+
+    /* Minimalist Command Manual & Controls Grid */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      text-align: left;
+      font-size: 13px;
+      margin: 16px 0;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 16px 20px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+    }
+
+    .key-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      color: #f8fafc;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+
+    /* Minimalist Top HUD Floating Bar */
+    .top-floating-bar {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      z-index: 15;
+    }
+
+    .icon-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      background: rgba(10, 14, 23, 0.5);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .icon-btn:hover {
+      color: #fff;
+      border-color: rgba(0, 240, 255, 0.4);
+      background: rgba(0, 240, 255, 0.08);
+    }
+
+    /* Minimalist Controls Trigger Button */
+    .min-controls-btn {
+      background: rgba(10, 14, 23, 0.5);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .min-controls-btn:hover {
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.4);
+      color: #ffffff;
+    }
+
+    .min-controls-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* In-game Minimalist Controls Footer Reference */
+    .hud-controls-hint {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 11px;
+      letter-spacing: 1.8px;
+      color: rgba(148, 163, 184, 0.4);
+      text-transform: uppercase;
+      pointer-events: none;
+      display: flex;
+      gap: 12px;
+      z-index: 5;
+      font-family: monospace;
+      white-space: nowrap;
+    }
+
+    .hud-controls-hint span {
+      color: rgba(255, 255, 255, 0.65);
+      font-weight: 700;
+    }
+
+    /* Audio Banner Notification */
+    #audio-prompt {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #64748b;
+      text-transform: uppercase;
+      z-index: 12;
+      pointer-events: none;
+    }
+
+    /* Mobile virtual touch controls - Sleek Minimalist Wireframes */
+    #touch-controls {
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      width: 100%;
+      height: 180px;
+      pointer-events: none;
+      display: none;
+      z-index: 15;
+    }
+
+    .touch-btn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(10, 14, 23, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      pointer-events: auto;
+      touch-action: manipulation;
+      backdrop-filter: blur(4px);
+      transition: all 0.15s ease;
+    }
+    .touch-btn:active {
+      background: rgba(0, 240, 255, 0.25);
+      border-color: var(--cyan-glow);
+      color: #ffffff;
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- Minimalist Top Bar -->
+    <div class="top-floating-bar">
+      <button class="min-controls-btn" id="btn-see-controls" title="Toggle Controls Manual (C / H)">⌨ CONTROLS</button>
+      <button class="icon-btn" id="btn-sound" title="Toggle Sound / BGM">🔊</button>
+      <button class="icon-btn" id="btn-pause" title="Pause Game (P / Esc)">⏸</button>
+    </div>
+
+    <!-- In-game Minimalist Reference Bar -->
+    <div class="hud-controls-hint">
+      <span>WASD</span> Move & Jump &middot;
+      <span>J</span> Strike &middot;
+      <span>K</span> Kick &middot;
+      <span>L</span> Dash &middot;
+      <span>SPACE</span> Shadow &middot;
+      <span>C</span> Manual
+    </div>
+
+    <!-- MAIN MENU OVERLAY -->
+    <div id="main-menu" class="ui-overlay active">
+      <div class="glass-card">
+        <h1 class="brand-title">SHADOW BLADE</h1>
+        <div class="brand-subtitle">ANTIGRAVITY COMBAT ARENA</div>
+
+        <div class="menu-button-group">
+          <button class="btn" id="btn-play-ai">
+            <span>⚡ VERSUS AI DUEL</span>
+          </button>
+          <button class="btn" id="btn-play-2p">
+            <span>⚔️ 2-PLAYER LOCAL</span>
+          </button>
+          <button class="btn" id="btn-training">
+            <span>🥋 TRAINING DOJO</span>
+          </button>
+          <button class="btn" id="btn-moves-menu">
+            <span>⌨ CONTROLS & ARTS</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAUSE MENU OVERLAY -->
+    <div id="pause-menu" class="ui-overlay" style="display: none;">
+      <div class="glass-card">
+        <h2 class="brand-title" style="font-size: 32px;">PAUSED</h2>
+        <div class="brand-subtitle">STANDBY COMBATANT</div>
+
+        <div class="menu-button-group">
+          <button class="btn" id="btn-resume">RESUME BATTLE</button>
+          <button class="btn" id="btn-restart-round">RESTART MATCH</button>
+          <button class="btn" id="btn-controls-pause">⌨ CONTROLS</button>
+          <button class="btn crimson" id="btn-quit-main">MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MINIMALIST COMMAND MANUAL -->
+    <div id="moves-modal" class="ui-overlay" style="display: none;">
+      <div class="glass-card" style="max-width: 580px; padding: 26px 30px;">
+        <h2 class="brand-title" style="font-size: 22px; letter-spacing: 5px; margin-bottom: 2px;">CONTROLS</h2>
+        <div class="brand-subtitle" style="font-size: 11px; letter-spacing: 2px; margin-bottom: 14px;">MINIMALIST COMBAT MANUAL</div>
+
+        <div class="controls-grid">
+          <div>
+            <div style="color: var(--cyan-glow); font-weight: 700; font-size: 11px; letter-spacing: 1.5px; margin-bottom: 6px;">BASIC INPUTS</div>
+            <div class="control-row"><span>Move</span> <span><span class="key-badge">A</span> <span class="key-badge">D</span></span></div>
+            <div class="control-row"><span>Float Jump</span> <span><span class="key-badge">W</span></span></div>
+            <div class="control-row"><span>Crouch</span> <span><span class="key-badge">S</span></span></div>
+            <div class="control-row"><span>Strike</span> <span><span class="key-badge">J</span></span></div>
+            <div class="control-row"><span>Snap Kick</span> <span><span class="key-badge">K</span></span></div>
+            <div class="control-row"><span>Shadow Dash</span> <span><span class="key-badge">L</span></span></div>
+            <div class="control-row"><span>Shadow Art</span> <span><span class="key-badge">SPACE</span></span></div>
+            <div class="control-row"><span>Guard</span> <span>Hold <span class="key-badge">Back</span></span></div>
+          </div>
+          <div>
+            <div style="color: var(--crimson-glow); font-weight: 700; font-size: 11px; letter-spacing: 1.5px; margin-bottom: 6px;">TECHNIQUES</div>
+            <div class="control-row"><span>3-Hit Combo</span> <span><span class="key-badge">J</span> <span class="key-badge">J</span> <span class="key-badge">J</span></span></div>
+            <div class="control-row"><span>Thrust</span> <span><span class="key-badge">Fwd</span> + <span class="key-badge">J</span></span></div>
+            <div class="control-row"><span>Launch</span> <span><span class="key-badge">Up</span> + <span class="key-badge">J</span></span></div>
+            <div class="control-row"><span>Air Dive</span> <span><span class="key-badge">Air</span> + <span class="key-badge">J</span></span></div>
+            <div class="control-row"><span>Sweep</span> <span><span class="key-badge">Down</span> + <span class="key-badge">K</span></span></div>
+            <div class="control-row"><span>Wall Rebound</span> <span><span class="key-badge">Wall</span> + <span class="key-badge">W</span></span></div>
+            <div class="control-row"><span>Void Art</span> <span><span class="key-badge">SPACE</span> (Full Ki)</span></div>
+          </div>
+        </div>
+
+        <div style="font-size: 11px; color: #64748b; letter-spacing: 1px; margin: 10px 0 14px 0;">
+          P2 LOCAL: <span class="key-badge">Arrows</span> Move · <span class="key-badge">1</span> Strike · <span class="key-badge">2</span> Kick · <span class="key-badge">3</span> Dash · <span class="key-badge">4</span> Art
+        </div>
+
+        <button class="btn" id="btn-close-moves" style="padding: 10px 24px; font-size: 12px; letter-spacing: 2px;">CLOSE [ESC]</button>
+      </div>
+    </div>
+
+    <!-- GAME OVER / ROUND OVER OVERLAY -->
+    <div id="game-over-modal" class="ui-overlay" style="display: none;">
+      <div class="glass-card">
+        <h2 id="winner-banner" class="brand-title" style="font-size: 34px;">VICTORY</h2>
+        <div id="winner-sub" class="brand-subtitle">THE SHADOW REALM PREVAILS</div>
+
+        <div class="menu-button-group">
+          <button class="btn" id="btn-rematch">REMATCH</button>
+          <button class="btn crimson" id="btn-post-menu">RETURN TO MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Touch Controls for Mobile/Tablets -->
+    <div id="touch-controls">
+      <!-- D-Pad Left -->
+      <button class="touch-btn" id="t-left" style="left: 20px; bottom: 30px;">◀</button>
+      <button class="touch-btn" id="t-right" style="left: 85px; bottom: 30px;">▶</button>
+      <button class="touch-btn" id="t-up" style="left: 52px; bottom: 85px;">▲</button>
+      <button class="touch-btn" id="t-down" style="left: 52px; bottom: -10px;">▼</button>
+
+      <!-- Action Buttons Right -->
+      <button class="touch-btn" id="t-slash" style="right: 85px; bottom: 85px;">J</button>
+      <button class="touch-btn" id="t-kick" style="right: 25px; bottom: 85px;">K</button>
+      <button class="touch-btn" id="t-dash" style="right: 85px; bottom: 25px; font-size: 10px;">DASH</button>
+      <button class="touch-btn" id="t-ult" style="right: 25px; bottom: 25px; font-size: 11px;">KI</button>
+    </div>
+
+    <div id="audio-prompt">CLICK ANYWHERE OR PRESS ANY KEY TO INITIALIZE AUDIO</div>
+  </div>
+
+<script>
+/**
+ * =============================================================================
+ * SHADOW BLADE: ANTIGRAVITY ENGINE
+ * High-performance 2D Procedural Silhouette Fighter
+ * =============================================================================
+ */
+
+// Canvas roundRect Polyfill for universal compatibility
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    if (!r) r = [0, 0, 0, 0];
+    this.moveTo(x + r[0], y);
+    this.lineTo(x + w - r[1], y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+    this.lineTo(x + w, y + h - r[2]);
+    this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+    this.lineTo(x + r[3], y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+    this.lineTo(x, y + r[0]);
+    this.quadraticCurveTo(x, y, x + r[0], y);
+    return this;
+  };
+}
+
+// Global Constants & Canvas Setup
+const CANVAS = document.getElementById('gameCanvas');
+const CTX = CANVAS.getContext('2d');
+const V_WIDTH = 1280;
+const V_HEIGHT = 720;
+const GROUND_Y = 600;
+
+// Game State Enum
+const GameState = {
+  MENU: 'MENU',
+  PLAYING: 'PLAYING',
+  PAUSED: 'PAUSED',
+  ROUND_OVER: 'ROUND_OVER',
+  GAME_OVER: 'GAME_OVER'
+};
+
+const GameMode = {
+  VERSUS_AI: 'VERSUS_AI',
+  LOCAL_2P: 'LOCAL_2P',
+  TRAINING: 'TRAINING'
+};
+
+/* =============================================================================
+ * PROCEDURAL SYNTHESIZED SOUND ENGINE (Web Audio API - Zero External Assets)
+ * ============================================================================= */
+class SoundEngine {
+  constructor() {
+    this.ctx = null;
+    this.masterGain = null;
+    this.bgmGain = null;
+    this.sfxGain = null;
+    this.muted = false;
+    this.bgmTimer = null;
+    this.step = 0;
+    this.tempo = 112; // BPM
+    this.initialized = false;
+  }
+
+  init() {
+    if (this.initialized) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+      this.masterGain.connect(this.ctx.destination);
+
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+      this.sfxGain.connect(this.masterGain);
+
+      this.bgmGain = this.ctx.createGain();
+      this.bgmGain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+      this.bgmGain.connect(this.masterGain);
+
+      this.initialized = true;
+      document.getElementById('audio-prompt').style.display = 'none';
+      this.startBGM();
+    } catch (e) {
+      console.warn("Web Audio not supported or blocked", e);
+    }
+  }
+
+  toggleMute() {
+    if (!this.initialized) {
+      this.init();
+      return false;
+    }
+    this.muted = !this.muted;
+    if (this.masterGain) {
+      this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.7, this.ctx.currentTime);
+    }
+    return this.muted;
+  }
+
+  // Heavy weapon slash / whoosh
+  playSlash(isHeavy = false) {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const noise = this.createNoiseBuffer(0.12);
+    const noiseSource = this.ctx.createBufferSource();
+    noiseSource.buffer = noise;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(isHeavy ? 1200 : 2400, now);
+    filter.frequency.exponentialRampToValueAtTime(isHeavy ? 180 : 350, now + 0.12);
+    filter.Q.setValueAtTime(3.0, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.9, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    noiseSource.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    noiseSource.start(now);
+    noiseSource.stop(now + 0.12);
+  }
+
+  // Impact hit thud
+  playHit(isHeavy = false) {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = isHeavy ? 'triangle' : 'sine';
+    const startFreq = isHeavy ? 190 : 280;
+    const endFreq = isHeavy ? 35 : 45;
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.16);
+
+    gain.gain.setValueAtTime(isHeavy ? 1.0 : 0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.18);
+
+    // Subtle snap noise
+    this.playNoiseCrack(0.05, 1800, isHeavy ? 0.6 : 0.35);
+  }
+
+  // Metallic sword clash / parry
+  playClash() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    [880, 1320, 1760].forEach((freq, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.9, now + 0.25);
+
+      gain.gain.setValueAtTime(0.4 / (i + 1), now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    });
+  }
+
+  // Dash & Antigravity float whoosh
+  playDash() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(90, now + 0.2);
+
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+
+  // Shadow Magic / Ultimate activation roar
+  playShadowUltimate() {
+    if (!this.initialized || this.muted) return;
+    const now = this.ctx.currentTime;
+
+    // Sub-bass sweep
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.linearRampToValueAtTime(320, now + 0.3);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.9);
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, now);
+    filter.frequency.linearRampToValueAtTime(2500, now + 0.3);
+    filter.frequency.exponentialRampToValueAtTime(200, now + 0.9);
+
+    gain.gain.setValueAtTime(0.8, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.9);
+  }
+
+  playNoiseCrack(dur, freq, vol) {
+    const now = this.ctx.currentTime;
+    const buffer = this.createNoiseBuffer(dur);
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(freq, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    src.start(now);
+    src.stop(now + dur);
+  }
+
+  createNoiseBuffer(duration) {
+    const sampleRate = this.ctx.sampleRate;
+    const length = sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, length, sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    return buffer;
+  }
+
+  // Generative Cyber-Dojo Background Music Sequencer
+  startBGM() {
+    if (this.bgmTimer) return;
+    const stepTime = (60 / this.tempo) / 4; // 16th note
+    // Japanese In-sen / Hirajoshi scale notes (D, Eb, G, A, Bb)
+    const scale = [146.83, 155.56, 196.00, 220.00, 233.08, 293.66, 311.13, 392.00];
+
+    const tick = () => {
+      if (!this.muted && this.ctx) {
+        const now = this.ctx.currentTime;
+        const beat = this.step % 16;
+
+        // Taiko Kick on 0, 4, 8, 12 with subtle syncopation
+        if (beat === 0 || beat === 6 || beat === 10) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.frequency.setValueAtTime(110, now);
+          osc.frequency.exponentialRampToValueAtTime(32, now + 0.18);
+          gain.gain.setValueAtTime(0.5, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.connect(gain);
+          gain.connect(this.bgmGain);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+
+        // Shaker / Cyber Hi-Hat on offbeats
+        if (beat % 2 === 1) {
+          this.playNoiseCrack(0.02, 6000, 0.08);
+        }
+
+        // Bassline Synth Arpeggio
+        if (beat % 4 === 0 || beat === 14) {
+          const noteIndex = (Math.floor(this.step / 16) + (beat > 8 ? 2 : 0)) % scale.length;
+          const freq = scale[noteIndex] / 2;
+          const osc = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(350, now);
+          filter.frequency.exponentialRampToValueAtTime(100, now + 0.25);
+
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.bgmGain);
+
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      }
+      this.step++;
+      this.bgmTimer = setTimeout(tick, stepTime * 1000);
+    };
+    tick();
+  }
+}
+
+const Audio = new SoundEngine();
+
+/* =============================================================================
+ * PARTICLE & VISUAL EFFECTS SYSTEM
+ * ============================================================================= */
+class ParticleSystem {
+  constructor() {
+    this.particles = [];
+    this.shockwaves = [];
+    this.slashes = [];
+    this.ghosts = [];
+  }
+
+  // Blood/Shadow burst + glowing energy sparks
+  createHitSparks(x, y, color = '#00f0ff', count = 18, speed = 8) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const vel = (Math.random() * 0.7 + 0.3) * speed;
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * vel,
+        vy: Math.sin(angle) * vel - (Math.random() * 3),
+        size: Math.random() * 3 + 1.5,
+        color: Math.random() > 0.4 ? color : '#ffffff',
+        alpha: 1.0,
+        decay: Math.random() * 0.03 + 0.02,
+        gravity: 0.25,
+        type: 'spark'
+      });
+    }
+
+    // Shadow motes (dark ink droplets)
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const vel = Math.random() * 4 + 1;
+      this.particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * vel,
+        vy: Math.sin(angle) * vel - 1,
+        size: Math.random() * 5 + 3,
+        color: '#080a10',
+        alpha: 0.9,
+        decay: 0.02,
+        gravity: 0.2,
+        type: 'ink'
+      });
+    }
+  }
+
+  // Expanding shockwave ring
+  createShockwave(x, y, color = '#00f0ff', maxRadius = 80) {
+    this.shockwaves.push({
+      x: x,
+      y: y,
+      radius: 5,
+      maxRadius: maxRadius,
+      color: color,
+      alpha: 1.0,
+      growth: (maxRadius - 5) / 12
+    });
+  }
+
+  // Glowing slash arc
+  createSlashArc(x, y, angle, radius, color = '#00f0ff', arcSpan = Math.PI * 0.75) {
+    this.slashes.push({
+      x: x,
+      y: y,
+      angle: angle,
+      radius: radius,
+      color: color,
+      arcSpan: arcSpan,
+      alpha: 1.0,
+      decay: 0.12
+    });
+  }
+
+  // Silhouette afterimage clone (dash trail)
+  createGhost(charRig, facing, color = 'rgba(0, 240, 255, 0.4)') {
+    this.ghosts.push({
+      pose: JSON.parse(JSON.stringify(charRig)),
+      facing: facing,
+      color: color,
+      alpha: 0.65,
+      decay: 0.06
+    });
+  }
+
+  update(dt) {
+    // Update sparks & ink
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+      p.alpha -= p.decay;
+      if (p.y >= GROUND_Y) {
+        p.y = GROUND_Y;
+        p.vx *= 0.7;
+      }
+      if (p.alpha <= 0) this.particles.splice(i, 1);
+    }
+
+    // Update shockwaves
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const sw = this.shockwaves[i];
+      sw.radius += sw.growth;
+      sw.alpha -= 0.07;
+      if (sw.alpha <= 0 || sw.radius >= sw.maxRadius) {
+        this.shockwaves.splice(i, 1);
+      }
+    }
+
+    // Update slash arcs
+    for (let i = this.slashes.length - 1; i >= 0; i--) {
+      const s = this.slashes[i];
+      s.alpha -= s.decay;
+      if (s.alpha <= 0) this.slashes.splice(i, 1);
+    }
+
+    // Update ghost trails
+    for (let i = this.ghosts.length - 1; i >= 0; i--) {
+      const g = this.ghosts[i];
+      g.alpha -= g.decay;
+      if (g.alpha <= 0) this.ghosts.splice(i, 1);
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+
+    // Draw ghost afterimages first
+    for (const g of this.ghosts) {
+      ctx.save();
+      ctx.globalAlpha = g.alpha;
+      ctx.fillStyle = g.color;
+      ctx.shadowColor = g.color;
+      ctx.shadowBlur = 15;
+      drawRigDirect(ctx, g.pose, g.facing, g.color, true);
+      ctx.restore();
+    }
+
+    // Draw shockwaves
+    for (const sw of this.shockwaves) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = sw.color;
+      ctx.lineWidth = 4 * sw.alpha;
+      ctx.globalAlpha = sw.alpha;
+      ctx.shadowColor = sw.color;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw slash arcs
+    for (const s of this.slashes) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, s.angle - s.arcSpan / 2, s.angle + s.arcSpan / 2);
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 6 * s.alpha;
+      ctx.globalAlpha = s.alpha;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 20;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw sparks & particles
+    for (const p of this.particles) {
+      ctx.save();
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = p.color;
+      if (p.type === 'spark') {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+}
+
+const Particles = new ParticleSystem();
+
+/* =============================================================================
+ * DYNAMIC CAMERA & CINEMATICS (Auto-Framing, Shake, Antigravity Zoom)
+ * ============================================================================= */
+class Camera {
+  constructor() {
+    this.x = V_WIDTH / 2;
+    this.y = V_HEIGHT / 2;
+    this.targetX = V_WIDTH / 2;
+    this.targetY = V_HEIGHT / 2;
+    this.zoom = 1.0;
+    this.targetZoom = 1.0;
+    this.shakeAmount = 0;
+    this.shakeDecay = 0.9;
+    this.slowMo = 1.0;
+    this.slowMoTimer = 0;
+  }
+
+  update(p1, p2, dt) {
+    // Frame both players
+    const midX = (p1.x + p2.x) / 2;
+    const midY = (p1.y + p2.y) / 2 - 60;
+    const dist = Math.abs(p1.x - p2.x);
+
+    // Zoom out when players are far, zoom in for close intense duels
+    const desiredZoom = Math.min(1.22, Math.max(0.85, 950 / (dist + 400)));
+
+    this.targetX = midX;
+    this.targetY = midY;
+    this.targetZoom = desiredZoom;
+
+    // Smooth lerp
+    this.x += (this.targetX - this.x) * 0.1;
+    this.y += (this.targetY - this.y) * 0.1;
+    this.zoom += (this.targetZoom - this.zoom) * 0.08;
+
+    // Shake
+    if (this.shakeAmount > 0.1) {
+      this.shakeAmount *= this.shakeDecay;
+    } else {
+      this.shakeAmount = 0;
+    }
+
+    // Slow motion recovery
+    if (this.slowMoTimer > 0) {
+      this.slowMoTimer -= dt;
+      if (this.slowMoTimer <= 0) {
+        this.slowMo = 1.0;
+      }
+    }
+  }
+
+  triggerShake(power = 8) {
+    this.shakeAmount = Math.max(this.shakeAmount, power);
+  }
+
+  triggerHitStop(seconds = 0.08, slowScale = 0.1) {
+    this.slowMo = slowScale;
+    this.slowMoTimer = seconds;
+  }
+
+  apply(ctx) {
+    ctx.save();
+    const shakeX = (Math.random() - 0.5) * this.shakeAmount * 2;
+    const shakeY = (Math.random() - 0.5) * this.shakeAmount * 2;
+
+    ctx.translate(V_WIDTH / 2 + shakeX, V_HEIGHT / 2 + shakeY);
+    ctx.scale(this.zoom, this.zoom);
+    ctx.translate(-this.x, -this.y);
+  }
+
+  restore(ctx) {
+    ctx.restore();
+  }
+}
+
+const Cam = new Camera();
+
+/* =============================================================================
+ * PROCEDURAL ATMOSPHERIC BACKGROUND (Cyberpunk Moon & Dojo Silhouette)
+ * ============================================================================= */
+class Background {
+  constructor() {
+    this.embers = [];
+    for (let i = 0; i < 45; i++) {
+      this.embers.push({
+        x: Math.random() * V_WIDTH * 1.5 - 200,
+        y: Math.random() * V_HEIGHT,
+        vx: Math.random() * 0.6 - 0.3,
+        vy: -Math.random() * 0.8 - 0.2,
+        size: Math.random() * 2.5 + 1,
+        alpha: Math.random() * 0.7 + 0.3,
+        color: Math.random() > 0.5 ? '#00f0ff' : '#ff0055'
+      });
+    }
+  }
+
+  update() {
+    for (const e of this.embers) {
+      e.x += e.vx;
+      e.y += e.vy;
+      if (e.y < -10) {
+        e.y = V_HEIGHT + 10;
+        e.x = Math.random() * V_WIDTH * 1.5 - 200;
+      }
+    }
+  }
+
+  draw(ctx) {
+    // Sky gradient
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, V_HEIGHT);
+    skyGrad.addColorStop(0, '#04060b');
+    skyGrad.addColorStop(0.5, '#0b1220');
+    skyGrad.addColorStop(0.85, '#131b2e');
+    skyGrad.addColorStop(1, '#080a10');
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(-400, -200, V_WIDTH + 800, V_HEIGHT + 400);
+
+    // Glowing Blood/Cyan Moon
+    const moonX = V_WIDTH / 2;
+    const moonY = 220;
+    const moonRadius = 130;
+
+    const moonGlow = ctx.createRadialGradient(moonX, moonY, 10, moonX, moonY, moonRadius * 2.2);
+    moonGlow.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
+    moonGlow.addColorStop(0.5, 'rgba(0, 160, 255, 0.15)');
+    moonGlow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonRadius * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Crisp moon circle
+    const moonGrad = ctx.createLinearGradient(moonX, moonY - moonRadius, moonX, moonY + moonRadius);
+    moonGrad.addColorStop(0, '#ffffff');
+    moonGrad.addColorStop(0.7, '#88f4ff');
+    moonGrad.addColorStop(1, '#1b5a82');
+    ctx.fillStyle = moonGrad;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Distant mountain & cyber pagoda silhouette
+    ctx.fillStyle = '#060911';
+    ctx.beginPath();
+    ctx.moveTo(-400, GROUND_Y);
+    ctx.lineTo(-200, 420);
+    ctx.lineTo(100, 480);
+    ctx.lineTo(350, 400);
+    ctx.lineTo(580, 450);
+    ctx.lineTo(820, 390);
+    ctx.lineTo(1100, 470);
+    ctx.lineTo(V_WIDTH + 400, 410);
+    ctx.lineTo(V_WIDTH + 400, GROUND_Y);
+    ctx.closePath();
+    ctx.fill();
+
+    // Torii Gate & Japanese Dojo Architecture Silhouettes
+    ctx.fillStyle = '#0a0d17';
+    // Left Torii Pillar
+    ctx.fillRect(80, 280, 24, GROUND_Y - 280);
+    ctx.fillRect(240, 280, 24, GROUND_Y - 280);
+    ctx.fillRect(50, 300, 240, 18);
+    ctx.fillRect(40, 270, 260, 24);
+
+    // Right Pagoda Silhouette
+    ctx.fillRect(V_WIDTH - 280, 340, 200, GROUND_Y - 340);
+    // Pagoda Tier Roofs
+    this.drawRoof(ctx, V_WIDTH - 180, 340, 250);
+    this.drawRoof(ctx, V_WIDTH - 180, 260, 200);
+    this.drawRoof(ctx, V_WIDTH - 180, 190, 150);
+
+    // Glowing lanterns
+    this.drawLantern(ctx, 92, 330, '#ff0055');
+    this.drawLantern(ctx, 252, 330, '#00f0ff');
+    this.drawLantern(ctx, V_WIDTH - 180, 280, '#ffbb00');
+
+    // Embers
+    for (const e of this.embers) {
+      ctx.fillStyle = e.color;
+      ctx.shadowColor = e.color;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    // Ground platform with reflective sheen
+    const floorGrad = ctx.createLinearGradient(0, GROUND_Y, 0, V_HEIGHT);
+    floorGrad.addColorStop(0, '#0d111d');
+    floorGrad.addColorStop(0.08, '#080a12');
+    floorGrad.addColorStop(1, '#020305');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(-400, GROUND_Y, V_WIDTH + 800, V_HEIGHT - GROUND_Y + 400);
+
+    // Floor highlight edge line
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-400, GROUND_Y);
+    ctx.lineTo(V_WIDTH + 400, GROUND_Y);
+    ctx.stroke();
+
+    // Subtle neon grid on floor
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.04)';
+    ctx.lineWidth = 1;
+    for (let x = -200; x < V_WIDTH + 400; x += 80) {
+      ctx.beginPath();
+      ctx.moveTo(x, GROUND_Y);
+      ctx.lineTo(x + (x - V_WIDTH / 2) * 0.8, V_HEIGHT);
+      ctx.stroke();
+    }
+  }
+
+  drawRoof(ctx, cx, y, w) {
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, y);
+    ctx.quadraticCurveTo(cx, y - 18, cx + w / 2, y);
+    ctx.lineTo(cx + w / 2 - 15, y + 15);
+    ctx.quadraticCurveTo(cx, y + 2, cx - w / 2 + 15, y + 15);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  drawLantern(ctx, x, y, glowColor) {
+    ctx.save();
+    ctx.fillStyle = glowColor;
+    ctx.shadowColor = glowColor;
+    ctx.shadowBlur = 14;
+    ctx.beginPath();
+    ctx.arc(x, y, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#020305';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 12);
+    ctx.lineTo(x, y - 7);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+const BG = new Background();
+
+/* =============================================================================
+ * PROCEDURAL SKELETAL RIG & ANIMATION SYSTEM (SHADOW FIGHT STYLE)
+ * Articulated Silhouettes with Flowing Ribbons, Glowing Visors, & Blade Trails
+ * ============================================================================= */
+
+// Helper: Angle lerp
+function lerpAngle(a, b, t) {
+  let diff = (b - a) % (Math.PI * 2);
+  if (diff < -Math.PI) diff += Math.PI * 2;
+  if (diff > Math.PI) diff -= Math.PI * 2;
+  return a + diff * t;
+}
+
+// Preset Keyframe Poses for Silky Procedural Motion
+const Poses = {
+  IDLE: {
+    hipY: 100, torsoAngle: -0.05, headAngle: 0.05,
+    armL1: 0.6, armL2: 1.4,
+    armR1: -0.4, armR2: 1.2,
+    legL1: 0.2, legL2: 0.3,
+    legR1: -0.3, legR2: 0.2,
+    weaponAngle: -0.8
+  },
+  RUN_1: {
+    hipY: 96, torsoAngle: 0.35, headAngle: -0.1,
+    armL1: -0.9, armL2: 0.6,
+    armR1: 0.9, armR2: 1.2,
+    legL1: 0.8, legL2: 0.9,
+    legR1: -0.9, legR2: 0.3,
+    weaponAngle: 0.4
+  },
+  RUN_2: {
+    hipY: 96, torsoAngle: 0.35, headAngle: -0.1,
+    armL1: 0.8, armL2: 1.1,
+    armR1: -0.8, armR2: 0.5,
+    legL1: -0.8, legL2: 0.4,
+    legR1: 0.8, legR2: 0.8,
+    weaponAngle: 0.1
+  },
+  JUMP_UP: {
+    hipY: 105, torsoAngle: 0.1, headAngle: -0.2,
+    armL1: -1.2, armL2: 0.5,
+    armR1: -1.0, armR2: 0.4,
+    legL1: 0.9, legL2: 1.5,
+    legR1: 0.6, legR2: 1.2,
+    weaponAngle: -1.6
+  },
+  CROUCH: {
+    hipY: 55, torsoAngle: 0.4, headAngle: -0.2,
+    armL1: 0.3, armL2: 1.6,
+    armR1: -0.2, armR2: 1.5,
+    legL1: 1.3, legL2: 2.1,
+    legR1: 1.1, legR2: 1.9,
+    weaponAngle: -0.4
+  },
+  BLOCK: {
+    hipY: 95, torsoAngle: -0.2, headAngle: 0.1,
+    armL1: 0.8, armL2: 1.8,
+    armR1: 0.4, armR2: 2.1,
+    legL1: -0.4, legL2: 0.3,
+    legR1: 0.4, legR2: 0.2,
+    weaponAngle: 0.8
+  },
+  // Attacks
+  JAB_STARTUP: {
+    hipY: 98, torsoAngle: -0.15, headAngle: 0.1,
+    armL1: -0.5, armL2: 1.2,
+    armR1: 0.8, armR2: 1.6,
+    legL1: -0.2, legL2: 0.3, legR1: 0.3, legR2: 0.2,
+    weaponAngle: -1.2
+  },
+  JAB_ACTIVE: {
+    hipY: 96, torsoAngle: 0.3, headAngle: -0.1,
+    armL1: 1.5, armL2: 0.1,
+    armR1: -0.8, armR2: 1.2,
+    legL1: 0.6, legL2: 0.4, legR1: -0.6, legR2: 0.2,
+    weaponAngle: 0.2
+  },
+  HEAVY_SLASH_STARTUP: {
+    hipY: 102, torsoAngle: -0.3, headAngle: 0.2,
+    armL1: -1.6, armL2: 0.4,
+    armR1: -1.4, armR2: 0.5,
+    legL1: -0.5, legL2: 0.4, legR1: 0.5, legR2: 0.2,
+    weaponAngle: -2.3
+  },
+  HEAVY_SLASH_ACTIVE: {
+    hipY: 88, torsoAngle: 0.55, headAngle: -0.3,
+    armL1: 1.2, armL2: 0.2,
+    armR1: 0.9, armR2: 0.3,
+    legL1: 0.9, legL2: 0.5, legR1: -0.8, legR2: 0.3,
+    weaponAngle: 1.6
+  },
+  THRUST_ACTIVE: {
+    hipY: 82, torsoAngle: 0.6, headAngle: -0.2,
+    armL1: 1.55, armL2: 0.05,
+    armR1: -0.9, armR2: 1.0,
+    legL1: 1.1, legL2: 0.6, legR1: -1.1, legR2: 0.4,
+    weaponAngle: 0.05
+  },
+  KICK_ACTIVE: {
+    hipY: 102, torsoAngle: -0.4, headAngle: 0.3,
+    armL1: -0.8, armL2: 1.2,
+    armR1: 0.6, armR2: 1.0,
+    legL1: 1.8, legL2: 0.1, // Full extended leg
+    legR1: -0.4, legR2: 0.5,
+    weaponAngle: -1.1
+  },
+  SWEEP_ACTIVE: {
+    hipY: 45, torsoAngle: 0.7, headAngle: -0.3,
+    armL1: 0.5, armL2: 1.2,
+    armR1: -0.4, armR2: 1.5,
+    legL1: 1.6, legL2: 0.05,
+    legR1: 0.8, legR2: 1.9,
+    weaponAngle: 0.3
+  },
+  UPPERCUT_ACTIVE: {
+    hipY: 110, torsoAngle: -0.25, headAngle: 0.4,
+    armL1: -1.7, armL2: 0.1,
+    armR1: 0.2, armR2: 1.3,
+    legL1: 0.3, legL2: 0.2, legR1: -0.2, legR2: 0.1,
+    weaponAngle: -2.8
+  },
+  HURT: {
+    hipY: 95, torsoAngle: -0.45, headAngle: -0.4,
+    armL1: -0.6, armL2: 1.4,
+    armR1: -0.9, armR2: 1.1,
+    legL1: 0.4, legL2: 0.3, legR1: -0.5, legR2: 0.4,
+    weaponAngle: -0.3
+  },
+  KNOCKDOWN: {
+    hipY: 25, torsoAngle: -1.5, headAngle: -0.2,
+    armL1: 0.2, armL2: 0.8,
+    armR1: -0.5, armR2: 0.5,
+    legL1: 0.3, legL2: 0.8, legR1: 0.1, legR2: 0.6,
+    weaponAngle: 0.0
+  }
+};
+
+// Global direct silhouette rig renderer
+function drawRigDirect(ctx, rig, facing, tint = '#06080d', isGhost = false) {
+  ctx.save();
+  ctx.translate(rig.x, rig.y);
+  ctx.scale(facing, 1);
+
+  const hipX = 0;
+  const hipY = -rig.hipY;
+
+  // Dimensions
+  const torsoLen = 42;
+  const neckLen = 14;
+  const headRadius = 14;
+  const thighLen = 38;
+  const shinLen = 38;
+  const upperArmLen = 30;
+  const forearmLen = 28;
+  const swordLen = 85;
+
+  // Torso & Head calculations
+  const neckX = hipX + Math.sin(rig.torsoAngle) * torsoLen;
+  const neckY = hipY - Math.cos(rig.torsoAngle) * torsoLen;
+  const headX = neckX + Math.sin(rig.torsoAngle + rig.headAngle) * neckLen;
+  const headY = neckY - Math.cos(rig.torsoAngle + rig.headAngle) * neckLen;
+
+  // Far Limbs (Drawn first with darker silhouette)
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Far Leg (Right)
+  const kneeRX = hipX + Math.sin(rig.legR1) * thighLen;
+  const kneeRY = hipY + Math.cos(rig.legR1) * thighLen;
+  const footRX = kneeRX + Math.sin(rig.legR1 + rig.legR2) * shinLen;
+  const footRY = kneeRY + Math.cos(rig.legR1 + rig.legR2) * shinLen;
+
+  ctx.strokeStyle = isGhost ? tint : '#0c0f17';
+  ctx.lineWidth = 13;
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY);
+  ctx.lineTo(kneeRX, kneeRY);
+  ctx.lineTo(footRX, footRY);
+  ctx.stroke();
+
+  // Far Arm (Right)
+  const elbowRX = neckX + Math.sin(rig.armR1) * upperArmLen;
+  const elbowRY = neckY + Math.cos(rig.armR1) * upperArmLen;
+  const handRX = elbowRX + Math.sin(rig.armR1 + rig.armR2) * forearmLen;
+  const handRY = elbowRY + Math.cos(rig.armR1 + rig.armR2) * forearmLen;
+
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(neckX, neckY);
+  ctx.lineTo(elbowRX, elbowRY);
+  ctx.lineTo(handRX, handRY);
+  ctx.stroke();
+
+  // Near Leg (Left - Front)
+  const kneeLX = hipX + Math.sin(rig.legL1) * thighLen;
+  const kneeLY = hipY + Math.cos(rig.legL1) * thighLen;
+  const footLX = kneeLX + Math.sin(rig.legL1 + rig.legL2) * shinLen;
+  const footLY = kneeLY + Math.cos(rig.legL1 + rig.legL2) * shinLen;
+
+  ctx.strokeStyle = isGhost ? tint : '#040508';
+  ctx.lineWidth = 14;
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY);
+  ctx.lineTo(kneeLX, kneeLY);
+  ctx.lineTo(footLX, footLY);
+  ctx.stroke();
+
+  // Torso Silhouette
+  ctx.lineWidth = 18;
+  ctx.beginPath();
+  ctx.moveTo(hipX, hipY + 4);
+  ctx.lineTo(neckX, neckY);
+  ctx.stroke();
+
+  // Head Silhouette
+  ctx.fillStyle = isGhost ? tint : '#040508';
+  ctx.beginPath();
+  ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Near Arm & Weapon (Left)
+  const elbowLX = neckX + Math.sin(rig.armL1) * upperArmLen;
+  const elbowLY = neckY + Math.cos(rig.armL1) * upperArmLen;
+  const handLX = elbowLX + Math.sin(rig.armL1 + rig.armL2) * forearmLen;
+  const handLY = elbowLY + Math.cos(rig.armL1 + rig.armL2) * forearmLen;
+
+  ctx.strokeStyle = isGhost ? tint : '#040508';
+  ctx.lineWidth = 11;
+  ctx.beginPath();
+  ctx.moveTo(neckX, neckY);
+  ctx.lineTo(elbowLX, elbowLY);
+  ctx.lineTo(handLX, handLY);
+  ctx.stroke();
+
+  // Weapon: Razor Sharp Shadow Katana
+  const tipX = handLX + Math.cos(rig.weaponAngle) * swordLen;
+  const tipY = handLY + Math.sin(rig.weaponAngle) * swordLen;
+
+  ctx.save();
+  ctx.strokeStyle = '#d6e4ff';
+  ctx.lineWidth = 3;
+  ctx.shadowColor = tint;
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.moveTo(handLX, handLY);
+  ctx.lineTo(tipX, tipY);
+  ctx.stroke();
+
+  // Katana Tsuba (Guard)
+  ctx.strokeStyle = tint;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(handLX - Math.sin(rig.weaponAngle) * 6, handLY + Math.cos(rig.weaponAngle) * 6);
+  ctx.lineTo(handLX + Math.sin(rig.weaponAngle) * 6, handLY - Math.cos(rig.weaponAngle) * 6);
+  ctx.stroke();
+  ctx.restore();
+
+  // Glowing Eye Visor (Cyberpunk / Shadow Demon Glow)
+  if (!isGhost) {
+    ctx.save();
+    ctx.fillStyle = tint;
+    ctx.shadowColor = tint;
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    // Eye slit on facing side
+    ctx.ellipse(headX + 4, headY - 2, 5, 2, 0.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/* =============================================================================
+ * FIGHTER / PLAYER CLASS
+ * Physics, State Machine, Combos, Hitboxes, Hurtboxes
+ * ============================================================================= */
+class Fighter {
+  constructor(isPlayer1 = true) {
+    this.isPlayer1 = isPlayer1;
+    this.name = isPlayer1 ? "SHADOW" : "NIGHTFALL";
+    this.accentColor = isPlayer1 ? '#00f0ff' : '#ff0055';
+
+    // Position & Physics ("Antigravity" Momentum)
+    this.x = isPlayer1 ? 400 : 880;
+    this.y = GROUND_Y;
+    this.vx = 0;
+    this.vy = 0;
+    this.facing = isPlayer1 ? 1 : -1;
+    this.isGrounded = true;
+    this.canWallJump = false;
+
+    // Health & Shadow Energy
+    this.maxHp = 1000;
+    this.hp = 1000;
+    this.displayHp = 1000;
+    this.energy = 0; // 0 to 100 (Shadow Meter)
+    this.maxEnergy = 100;
+    this.roundsWon = 0;
+
+    // Combat State
+    this.state = 'IDLE'; // IDLE, MOVE, JUMP, FALL, CROUCH, ATTACK, HIT, BLOCK, KNOCKDOWN, SHADOW_ULT
+    this.stateTimer = 0;
+    this.currentAttack = null;
+    this.hasHitThisAttack = false;
+    this.comboCounter = 0;
+    this.comboTimer = 0;
+    this.isInvulnerable = false;
+
+    // Skeletal Rig
+    this.rig = JSON.parse(JSON.stringify(Poses.IDLE));
+    this.rig.x = this.x;
+    this.rig.y = this.y;
+    this.targetPose = Poses.IDLE;
+    this.blendSpeed = 0.25;
+
+    // Weapon Trail Buffers
+    this.weaponTrail = [];
+    // Ninja Headband Ribbon Physics (3 segments)
+    this.ribbon = [
+      { x: this.x, y: this.y - 140 },
+      { x: this.x - 10, y: this.y - 138 },
+      { x: this.x - 22, y: this.y - 135 }
+    ];
+
+    // Shadow Clone Sequence Data
+    this.shadowClonePhase = 0;
+    this.shadowCloneTimer = 0;
+    this.opponent = null;
+  }
+
+  reset(xPos) {
+    this.x = xPos;
+    this.y = GROUND_Y;
+    this.vx = 0;
+    this.vy = 0;
+    this.hp = this.maxHp;
+    this.displayHp = this.maxHp;
+    this.energy = 30; // Starting partial energy
+    this.state = 'IDLE';
+    this.stateTimer = 0;
+    this.currentAttack = null;
+    this.comboCounter = 0;
+    this.hasHitThisAttack = false;
+    this.targetPose = Poses.IDLE;
+    this.facing = this.isPlayer1 ? 1 : -1;
+  }
+
+  setOpponent(opp) {
+    this.opponent = opp;
+  }
+
+  // Define Move Registry
+  getAttackData(moveKey) {
+    const attacks = {
+      JAB_1: {
+        name: 'SHADOW JAB',
+        startup: 0.07, active: 0.12, recovery: 0.12,
+        damage: 40, energyGain: 12,
+        hitType: 'HIGH',
+        knockbackX: 4, knockbackY: -2,
+        hitStun: 0.25,
+        poseStartup: Poses.JAB_STARTUP, poseActive: Poses.JAB_ACTIVE,
+        nextCombo: 'JAB_2', comboWindow: 0.35,
+        reach: 75, height: 110,
+        isHeavy: false
+      },
+      JAB_2: {
+        name: 'CROSS SLASH',
+        startup: 0.06, active: 0.12, recovery: 0.15,
+        damage: 60, energyGain: 15,
+        hitType: 'MID',
+        knockbackX: 6, knockbackY: -2.5,
+        hitStun: 0.28,
+        poseStartup: Poses.JAB_STARTUP, poseActive: Poses.HEAVY_SLASH_ACTIVE,
+        nextCombo: 'JAB_3', comboWindow: 0.38,
+        reach: 85, height: 100,
+        isHeavy: false
+      },
+      JAB_3: {
+        name: 'CYCLONE FINISHER',
+        startup: 0.1, active: 0.16, recovery: 0.25,
+        damage: 90, energyGain: 20,
+        hitType: 'MID',
+        knockbackX: 13, knockbackY: -7,
+        hitStun: 0.5,
+        poseStartup: Poses.HEAVY_SLASH_STARTUP, poseActive: Poses.HEAVY_SLASH_ACTIVE,
+        reach: 95, height: 95,
+        isHeavy: true
+      },
+      THRUST: {
+        name: 'LUNGING VIPER',
+        startup: 0.11, active: 0.14, recovery: 0.22,
+        damage: 85, energyGain: 18,
+        hitType: 'MID',
+        dashVx: 12, // Gap closer
+        knockbackX: 11, knockbackY: -3,
+        hitStun: 0.42,
+        poseStartup: Poses.JAB_STARTUP, poseActive: Poses.THRUST_ACTIVE,
+        reach: 105, height: 85,
+        isHeavy: true
+      },
+      UPPERCUT_SLASH: {
+        name: 'RISING CRESCENT',
+        startup: 0.1, active: 0.14, recovery: 0.24,
+        damage: 80, energyGain: 18,
+        hitType: 'HIGH',
+        launchVy: -13, // Antigravity air launcher!
+        knockbackX: 4, knockbackY: -14,
+        hitStun: 0.55,
+        poseStartup: Poses.CROUCH, poseActive: Poses.UPPERCUT_ACTIVE,
+        reach: 70, height: 130,
+        isHeavy: true
+      },
+      KICK: {
+        name: 'SNAP KICK',
+        startup: 0.07, active: 0.12, recovery: 0.14,
+        damage: 55, energyGain: 14,
+        hitType: 'HIGH',
+        knockbackX: 8, knockbackY: -3,
+        hitStun: 0.3,
+        poseStartup: Poses.IDLE, poseActive: Poses.KICK_ACTIVE,
+        reach: 80, height: 105,
+        isHeavy: false
+      },
+      LOW_SWEEP: {
+        name: 'SHADOW SWEEP',
+        startup: 0.08, active: 0.14, recovery: 0.2,
+        damage: 65, energyGain: 15,
+        hitType: 'LOW',
+        knockbackX: 7, knockbackY: -6,
+        hitStun: 0.5,
+        isKnockdown: true,
+        poseStartup: Poses.CROUCH, poseActive: Poses.SWEEP_ACTIVE,
+        reach: 85, height: 45,
+        isHeavy: false
+      },
+      AERIAL_DIVE: {
+        name: 'METEOR BLADE',
+        startup: 0.06, active: 0.2, recovery: 0.18,
+        damage: 95, energyGain: 22,
+        hitType: 'OVERHEAD',
+        knockbackX: 9, knockbackY: -4,
+        hitStun: 0.45,
+        poseStartup: Poses.JUMP_UP, poseActive: Poses.HEAVY_SLASH_ACTIVE,
+        reach: 75, height: 75,
+        isHeavy: true
+      },
+      SHADOW_ULT: {
+        name: 'VOID EXECUTION',
+        startup: 0.35, active: 0.8, recovery: 0.4,
+        damage: 280, energyGain: 0,
+        hitType: 'UNBLOCKABLE',
+        knockbackX: 18, knockbackY: -9,
+        hitStun: 0.9,
+        poseStartup: Poses.HEAVY_SLASH_STARTUP, poseActive: Poses.THRUST_ACTIVE,
+        reach: 180, height: 100,
+        isHeavy: true
+      }
+    };
+    return attacks[moveKey];
+  }
+
+  triggerAttack(moveKey) {
+    if (this.state === 'HIT' || this.state === 'KNOCKDOWN' || this.state === 'SHADOW_ULT') return;
+    if (this.state === 'ATTACK') {
+      // Check combo cancel window
+      if (this.currentAttack && this.currentAttack.nextCombo === moveKey && this.comboWindowOpen) {
+        // Proceed with combo
+      } else {
+        return;
+      }
+    }
+
+    const data = this.getAttackData(moveKey);
+    if (!data) return;
+
+    if (moveKey === 'SHADOW_ULT') {
+      if (this.energy < 100) return; // Requires full meter
+      this.energy = 0;
+      this.state = 'SHADOW_ULT';
+      this.shadowClonePhase = 0;
+      this.shadowCloneTimer = 0;
+      Audio.playShadowUltimate();
+      Cam.triggerHitStop(0.3, 0.08);
+      Cam.triggerShake(14);
+      Particles.createShockwave(this.x, this.y - 70, this.accentColor, 140);
+    } else {
+      this.state = 'ATTACK';
+      Audio.playSlash(data.isHeavy);
+    }
+
+    this.currentAttack = Object.assign({}, data, { key: moveKey });
+    this.stateTimer = 0;
+    this.hasHitThisAttack = false;
+    this.comboWindowOpen = false;
+
+    // Apply gap closer dash if present
+    if (data.dashVx) {
+      this.vx = data.dashVx * this.facing;
+      Particles.createGhost(this.rig, this.facing, this.accentColor);
+    }
+    if (data.launchVy) {
+      this.vy = data.launchVy;
+      this.isGrounded = false;
+    }
+  }
+
+  // Dash & Dodge
+  triggerDash(dir) {
+    if (this.state !== 'IDLE' && this.state !== 'MOVE' && this.state !== 'CROUCH') return;
+    this.vx = dir * 16;
+    Audio.playDash();
+    Particles.createGhost(this.rig, this.facing, this.accentColor);
+    Particles.createGhost(this.rig, this.facing, 'rgba(255,255,255,0.4)');
+    this.isInvulnerable = true;
+    setTimeout(() => { this.isInvulnerable = false; }, 180);
+  }
+
+  takeHit(dmg, knockX, knockY, stunTime, hitType, isHeavy, isKnockdown = false) {
+    if (this.isInvulnerable || this.state === 'KNOCKDOWN') return;
+
+    // Check blocking (holding opposite direction of opponent while grounded)
+    const isGuarding = this.state === 'BLOCK';
+    if (isGuarding && hitType !== 'UNBLOCKABLE') {
+      dmg = Math.floor(dmg * 0.15); // 85% damage mitigation on block
+      Audio.playClash();
+      Cam.triggerShake(3);
+      Particles.createHitSparks(this.x + this.facing * 30, this.y - 80, '#ffffff', 8, 5);
+      this.vx = knockX * 0.3 * -this.facing;
+      this.energy = Math.min(this.maxEnergy, this.energy + 8);
+      this.hp = Math.max(0, this.hp - dmg);
+      return;
+    }
+
+    // Direct Hit
+    this.hp = Math.max(0, this.hp - dmg);
+    this.energy = Math.min(this.maxEnergy, this.energy + 14); // Meter on damage taken
+    Audio.playHit(isHeavy);
+    Cam.triggerShake(isHeavy ? 10 : 5);
+    Cam.triggerHitStop(isHeavy ? 0.08 : 0.04, 0.1);
+
+    Particles.createHitSparks(this.x, this.y - 75, this.accentColor, isHeavy ? 24 : 14, isHeavy ? 10 : 6);
+    if (isHeavy) Particles.createShockwave(this.x, this.y - 75, this.accentColor, 70);
+
+    this.vx = knockX * -this.facing;
+    this.vy = knockY;
+    if (knockY < 0) this.isGrounded = false;
+
+    if (isKnockdown || this.hp <= 0) {
+      this.state = 'KNOCKDOWN';
+      this.stateTimer = 0.7;
+      this.targetPose = Poses.KNOCKDOWN;
+    } else {
+      this.state = 'HIT';
+      this.stateTimer = stunTime;
+      this.targetPose = Poses.HURT;
+    }
+  }
+
+  update(dt, opponent) {
+    this.opponent = opponent;
+
+    // Display HP drain animation
+    if (this.displayHp > this.hp) {
+      this.displayHp -= (this.displayHp - this.hp) * 0.1;
+      if (Math.abs(this.displayHp - this.hp) < 1) this.displayHp = this.hp;
+    }
+
+    // Auto-facing opponent when not locked in attack
+    if (this.state !== 'ATTACK' && this.state !== 'SHADOW_ULT' && this.state !== 'KNOCKDOWN') {
+      this.facing = this.x < opponent.x ? 1 : -1;
+    }
+
+    // Combo timer decay
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) {
+        this.comboCounter = 0;
+      }
+    }
+
+    // State Machine Processing
+    this.handleStates(dt, opponent);
+
+    // Physics Engine: Antigravity float momentum & collisions
+    this.handlePhysics(dt);
+
+    // Update Ribbon Verlet Points
+    this.updateRibbon();
+
+    // Weapon Trail Sampling
+    this.updateWeaponTrail();
+
+    // Lerp Skeletal Rig Towards Target Pose
+    this.updateRig(dt);
+  }
+
+  handleStates(dt, opponent) {
+    if (this.state === 'ATTACK') {
+      const atk = this.currentAttack;
+      this.stateTimer += dt;
+
+      // Startup phase
+      if (this.stateTimer < atk.startup) {
+        this.targetPose = atk.poseStartup || Poses.IDLE;
+      }
+      // Active damage phase
+      else if (this.stateTimer < atk.startup + atk.active) {
+        this.targetPose = atk.poseActive;
+
+        // Hit detection against opponent hurtbox
+        if (!this.hasHitThisAttack) {
+          const hitX = this.x + this.facing * atk.reach;
+          const hitY = this.y - atk.height;
+          const oppDist = Math.hypot(hitX - opponent.x, hitY - (opponent.y - 70));
+
+          if (oppDist < 65) {
+            this.hasHitThisAttack = true;
+            this.comboWindowOpen = true;
+            this.comboCounter++;
+            this.comboTimer = 1.2;
+            this.energy = Math.min(this.maxEnergy, this.energy + atk.energyGain);
+
+            opponent.takeHit(
+              atk.damage,
+              atk.knockbackX,
+              atk.knockbackY,
+              atk.hitStun,
+              atk.hitType,
+              atk.isHeavy,
+              atk.isKnockdown
+            );
+
+            // Add dynamic slash visual
+            Particles.createSlashArc(hitX, hitY, this.facing > 0 ? 0.3 : Math.PI - 0.3, 70, this.accentColor);
+          }
+        }
+      }
+      // Recovery phase
+      else if (this.stateTimer < atk.startup + atk.active + atk.recovery) {
+        this.targetPose = Poses.IDLE;
+      }
+      // Completed
+      else {
+        this.state = 'IDLE';
+        this.currentAttack = null;
+      }
+    }
+    // Cinematic Shadow Ultimate Attack Sequence
+    else if (this.state === 'SHADOW_ULT') {
+      this.shadowCloneTimer += dt;
+      const t = this.shadowCloneTimer;
+
+      // Phase 1: Disappear into shadows
+      if (t < 0.25) {
+        this.targetPose = Poses.CROUCH;
+        Particles.createGhost(this.rig, this.facing, this.accentColor);
+      }
+      // Phase 2: Instant 4-hit omni-slash barrage from shadows
+      else if (t < 0.85) {
+        const step = Math.floor((t - 0.25) / 0.15);
+        if (step !== this.shadowClonePhase) {
+          this.shadowClonePhase = step;
+          // Teleport around opponent
+          const side = (step % 2 === 0) ? -1 : 1;
+          this.x = opponent.x + side * 90;
+          this.y = opponent.y - (step % 3) * 30;
+          this.facing = -side;
+          this.targetPose = (step % 2 === 0) ? Poses.HEAVY_SLASH_ACTIVE : Poses.THRUST_ACTIVE;
+
+          Audio.playSlash(true);
+          Audio.playHit(true);
+          Cam.triggerShake(7);
+          Particles.createHitSparks(opponent.x, opponent.y - 70, this.accentColor, 20, 9);
+          Particles.createSlashArc(opponent.x, opponent.y - 70, Math.random() * Math.PI * 2, 85, this.accentColor);
+          opponent.takeHit(55, 4, -4, 0.3, 'UNBLOCKABLE', true);
+        }
+      }
+      // Phase 3: Reappear behind opponent & Sheath snap finisher
+      else if (t < 1.35) {
+        this.x = opponent.x - this.facing * 90;
+        this.y = GROUND_Y;
+        this.targetPose = Poses.BLOCK;
+      }
+      // Final explosion
+      else if (t >= 1.35 && this.shadowClonePhase !== 99) {
+        this.shadowClonePhase = 99;
+        Cam.triggerShake(16);
+        Cam.triggerHitStop(0.18, 0.05);
+        Audio.playHit(true);
+        Particles.createShockwave(opponent.x, opponent.y - 70, this.accentColor, 150);
+        Particles.createHitSparks(opponent.x, opponent.y - 70, '#ffffff', 35, 14);
+        opponent.takeHit(120, 16, -10, 0.7, 'UNBLOCKABLE', true, true);
+      }
+      else if (t > 1.6) {
+        this.state = 'IDLE';
+      }
+    }
+    // Hit Stun Recovery
+    else if (this.state === 'HIT') {
+      this.stateTimer -= dt;
+      if (this.stateTimer <= 0) {
+        this.state = 'IDLE';
+      }
+    }
+    // Knockdown & Get-up Roll
+    else if (this.state === 'KNOCKDOWN') {
+      this.stateTimer -= dt;
+      if (this.stateTimer <= 0) {
+        this.state = 'IDLE';
+        this.triggerDash(-this.facing); // Safe roll back on stand up
+      }
+    }
+    // Walking / Running / Jumping state selection
+    else if (this.state === 'IDLE' || this.state === 'MOVE' || this.state === 'BLOCK' || this.state === 'CROUCH') {
+      if (!this.isGrounded) {
+        this.targetPose = this.vy < 0 ? Poses.JUMP_UP : Poses.IDLE;
+      } else if (this.state === 'BLOCK') {
+        this.targetPose = Poses.BLOCK;
+      } else if (this.state === 'CROUCH') {
+        this.targetPose = Poses.CROUCH;
+      } else if (Math.abs(this.vx) > 1.5) {
+        // Run stride cycle
+        const runCycle = Math.sin(Date.now() * 0.012);
+        this.targetPose = runCycle > 0 ? Poses.RUN_1 : Poses.RUN_2;
+      } else {
+        this.targetPose = Poses.IDLE;
+      }
+    }
+  }
+
+  handlePhysics(dt) {
+    // Custom Antigravity Momentum: floaty graceful hang time at peak of jump
+    let grav = 0.75;
+    if (Math.abs(this.vy) < 3.2 && !this.isGrounded) {
+      grav = 0.28; // Antigravity apex float!
+    }
+
+    this.vy += grav;
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Ground collision
+    if (this.y >= GROUND_Y) {
+      this.y = GROUND_Y;
+      this.vy = 0;
+      this.isGrounded = true;
+    }
+
+    // Ground friction
+    if (this.isGrounded) {
+      this.vx *= 0.82;
+      if (Math.abs(this.vx) < 0.2) this.vx = 0;
+    } else {
+      this.vx *= 0.96; // Less air drag
+    }
+
+    // Arena Boundaries & Antigravity Wall Jump Readiness
+    const minX = 80;
+    const maxX = V_WIDTH - 80;
+    if (this.x <= minX) {
+      this.x = minX;
+      this.vx = 0;
+      this.canWallJump = !this.isGrounded;
+    } else if (this.x >= maxX) {
+      this.x = maxX;
+      this.vx = 0;
+      this.canWallJump = !this.isGrounded;
+    } else {
+      this.canWallJump = false;
+    }
+  }
+
+  updateRig(dt) {
+    const target = this.targetPose;
+    const s = this.blendSpeed;
+
+    this.rig.x = this.x;
+    this.rig.y = this.y;
+    this.rig.hipY += (target.hipY - this.rig.hipY) * s;
+    this.rig.torsoAngle = lerpAngle(this.rig.torsoAngle, target.torsoAngle, s);
+    this.rig.headAngle = lerpAngle(this.rig.headAngle, target.headAngle, s);
+    this.rig.armL1 = lerpAngle(this.rig.armL1, target.armL1, s);
+    this.rig.armL2 = lerpAngle(this.rig.armL2, target.armL2, s);
+    this.rig.armR1 = lerpAngle(this.rig.armR1, target.armR1, s);
+    this.rig.armR2 = lerpAngle(this.rig.armR2, target.armR2, s);
+    this.rig.legL1 = lerpAngle(this.rig.legL1, target.legL1, s);
+    this.rig.legL2 = lerpAngle(this.rig.legL2, target.legL2, s);
+    this.rig.legR1 = lerpAngle(this.rig.legR1, target.legR1, s);
+    this.rig.legR2 = lerpAngle(this.rig.legR2, target.legR2, s);
+    this.rig.weaponAngle = lerpAngle(this.rig.weaponAngle, target.weaponAngle, s);
+  }
+
+  updateRibbon() {
+    // Verlet cloth simulation for ninja headband ribbon
+    const headX = this.x;
+    const headY = this.y - this.rig.hipY - 45;
+
+    this.ribbon[0].x = headX - this.facing * 10;
+    this.ribbon[0].y = headY;
+
+    for (let i = 1; i < this.ribbon.length; i++) {
+      const prev = this.ribbon[i - 1];
+      const cur = this.ribbon[i];
+
+      // Wind & gravity
+      cur.x += (Math.random() - 0.5) * 1.5 - this.facing * 2 - this.vx * 0.4;
+      cur.y += 0.4 - this.vy * 0.2;
+
+      // Distance constraint
+      const dx = cur.x - prev.x;
+      const dy = cur.y - prev.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      const maxLen = 14;
+      cur.x = prev.x + (dx / dist) * maxLen;
+      cur.y = prev.y + (dy / dist) * maxLen;
+    }
+  }
+
+  updateWeaponTrail() {
+    // Calculate global tip of sword
+    const handX = this.x + this.facing * 20;
+    const handY = this.y - this.rig.hipY - 20;
+    const tipX = handX + Math.cos(this.rig.weaponAngle) * 85 * this.facing;
+    const tipY = handY + Math.sin(this.rig.weaponAngle) * 85;
+
+    this.weaponTrail.unshift({ handX, handY, tipX, tipY, alpha: 1.0 });
+    if (this.weaponTrail.length > 8) {
+      this.weaponTrail.pop();
+    }
+    for (const t of this.weaponTrail) {
+      t.alpha -= 0.12;
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+
+    // Draw Glossy Dojo Floor Silhouette Reflection
+    if (this.y >= GROUND_Y - 30) {
+      ctx.save();
+      ctx.translate(0, GROUND_Y * 2);
+      ctx.scale(1, -0.38);
+      ctx.globalAlpha = 0.15;
+      drawRigDirect(ctx, this.rig, this.facing, this.accentColor, true);
+      ctx.restore();
+    }
+
+    // Draw Glowing Weapon Trail
+    if (this.weaponTrail.length >= 2 && (this.state === 'ATTACK' || this.state === 'SHADOW_ULT')) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(this.weaponTrail[0].handX, this.weaponTrail[0].handY);
+      for (let i = 0; i < this.weaponTrail.length; i++) {
+        ctx.lineTo(this.weaponTrail[i].tipX, this.weaponTrail[i].tipY);
+      }
+      for (let i = this.weaponTrail.length - 1; i >= 0; i--) {
+        ctx.lineTo(this.weaponTrail[i].handX, this.weaponTrail[i].handY);
+      }
+      ctx.closePath();
+      ctx.fillStyle = this.accentColor;
+      ctx.globalAlpha = 0.45;
+      ctx.shadowColor = this.accentColor;
+      ctx.shadowBlur = 20;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Draw Ninja Ribbon Tail
+    ctx.strokeStyle = this.accentColor;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = this.accentColor;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.moveTo(this.ribbon[0].x, this.ribbon[0].y);
+    for (let i = 1; i < this.ribbon.length; i++) {
+      ctx.lineTo(this.ribbon[i].x, this.ribbon[i].y);
+    }
+    ctx.stroke();
+
+    // Draw Character Procedural Silhouette
+    drawRigDirect(ctx, this.rig, this.facing, this.accentColor, false);
+
+    ctx.restore();
+  }
+}
+
+/* =============================================================================
+ * AI CONTROLLER (Adaptive Spacing, Combos, Reactions, Shadow Ultimate Usage)
+ * ============================================================================= */
+class AIController {
+  constructor(fighter, difficulty = 'MEDIUM') {
+    this.fighter = fighter;
+    this.difficulty = difficulty;
+    this.decisionTimer = 0;
+    this.reactionDelay = 0;
+  }
+
+  update(dt, opponent) {
+    if (this.fighter.state === 'HIT' || this.fighter.state === 'KNOCKDOWN' || this.fighter.state === 'SHADOW_ULT') {
+      return;
+    }
+
+    this.decisionTimer -= dt;
+    const dist = Math.abs(this.fighter.x - opponent.x);
+    const oppAttacking = opponent.state === 'ATTACK' || opponent.state === 'SHADOW_ULT';
+
+    // Fast reaction to incoming attacks
+    if (oppAttacking && dist < 120 && Math.random() < 0.65) {
+      // Guard or Roll back
+      if (Math.random() < 0.5) {
+        this.fighter.state = 'BLOCK';
+      } else {
+        this.fighter.triggerDash(-this.fighter.facing);
+      }
+      return;
+    }
+
+    // Regular AI Strategic Decision Loop
+    if (this.decisionTimer <= 0) {
+      this.decisionTimer = Math.random() * 0.25 + 0.15; // Decisions every 150-400ms
+
+      // If Shadow Meter is 100%, trigger Ultimate!
+      if (this.fighter.energy >= 100 && dist < 220) {
+        this.fighter.triggerAttack('SHADOW_ULT');
+        return;
+      }
+
+      // Close Range Tactics (< 90px)
+      if (dist < 90) {
+        const rand = Math.random();
+        if (rand < 0.35) {
+          this.fighter.triggerAttack('JAB_1');
+          setTimeout(() => {
+            if (this.fighter.comboWindowOpen) this.fighter.triggerAttack('JAB_2');
+          }, 140);
+        } else if (rand < 0.6) {
+          this.fighter.triggerAttack('KICK');
+        } else if (rand < 0.8) {
+          this.fighter.triggerAttack('LOW_SWEEP');
+        } else {
+          // Tactical Retreat
+          this.fighter.triggerDash(-this.fighter.facing);
+        }
+      }
+      // Mid Range Tactics (90px - 220px)
+      else if (dist < 220) {
+        const rand = Math.random();
+        if (rand < 0.4) {
+          // Lunge attack
+          this.fighter.triggerAttack('THRUST');
+        } else if (rand < 0.65) {
+          // Jump in Antigravity strike
+          this.fighter.vy = -14;
+          this.fighter.isGrounded = false;
+          setTimeout(() => {
+            this.fighter.triggerAttack('AERIAL_DIVE');
+          }, 200);
+        } else if (rand < 0.85) {
+          // Close distance with dash
+          this.fighter.triggerDash(this.fighter.facing);
+        } else {
+          // Advance cautiously
+          this.fighter.vx = this.fighter.facing * 5;
+        }
+      }
+      // Long Range (> 220px)
+      else {
+        // Advance towards opponent
+        this.fighter.vx = this.fighter.facing * 6;
+      }
+    }
+  }
+}
+
+/* =============================================================================
+ * INPUT HANDLER & MOVE LIST ENGINE
+ * ============================================================================= */
+class InputHandler {
+  constructor() {
+    this.keys = {};
+    this.justPressedKeys = {};
+    this.buffer = []; // { key, time }
+
+    window.addEventListener('keydown', (e) => {
+      Audio.init(); // Auto-unlock audio context on user gesture
+      const k = e.key.toLowerCase();
+      if (!this.keys[k]) {
+        this.justPressedKeys[k] = true;
+        this.justPressedKeys[e.code] = true;
+        this.buffer.push({ key: k, time: 0.22 });
+      }
+      this.keys[k] = true;
+      this.keys[e.code] = true;
+
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ', 'space'].includes(k)) {
+        e.preventDefault();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      const k = e.key.toLowerCase();
+      this.keys[k] = false;
+      this.keys[e.code] = false;
+    });
+
+    this.setupTouchControls();
+  }
+
+  setupTouchControls() {
+    const bindBtn = (id, key) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const press = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.setTouchKey(key, true);
+      };
+      const release = (e) => {
+        if (e.cancelable) e.preventDefault();
+        this.setTouchKey(key, false);
+      };
+      el.addEventListener('touchstart', press, { passive: false });
+      el.addEventListener('touchend', release, { passive: false });
+      el.addEventListener('mousedown', press);
+      el.addEventListener('mouseup', release);
+    };
+
+    bindBtn('t-left', 'a');
+    bindBtn('t-right', 'd');
+    bindBtn('t-up', 'w');
+    bindBtn('t-down', 's');
+    bindBtn('t-slash', 'j');
+    bindBtn('t-kick', 'k');
+    bindBtn('t-dash', 'l');
+    bindBtn('t-ult', 'u');
+  }
+
+  setTouchKey(k, isDown) {
+    Audio.init();
+    const key = k.toLowerCase();
+    if (isDown && !this.keys[key]) {
+      this.justPressedKeys[key] = true;
+      this.buffer.push({ key: key, time: 0.22 });
+    }
+    this.keys[key] = isDown;
+  }
+
+  isDown(k) {
+    return !!this.keys[k.toLowerCase()];
+  }
+
+  wasJustPressed(k) {
+    const key = k.toLowerCase();
+    if (this.justPressedKeys[key] || this.justPressedKeys[k]) {
+      this.justPressedKeys[key] = false;
+      this.justPressedKeys[k] = false;
+      return true;
+    }
+    for (let i = 0; i < this.buffer.length; i++) {
+      if (this.buffer[i].key === key) {
+        this.buffer.splice(i, 1);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  update(dt) {
+    for (let i = this.buffer.length - 1; i >= 0; i--) {
+      this.buffer[i].time -= dt;
+      if (this.buffer[i].time <= 0) {
+        this.buffer.splice(i, 1);
+      }
+    }
+  }
+}
+
+const Inputs = new InputHandler();
+
+/* =============================================================================
+ * HUD & COMBO OVERLAY RENDERER (Rendered directly onto Canvas for Glow & FX)
+ * ============================================================================= */
+class HUDRenderer {
+  constructor() {
+    this.timer = 99;
+    this.timerCountdown = 1.0;
+  }
+
+  update(dt, isFightActive) {
+    if (isFightActive && this.timer > 0) {
+      this.timerCountdown -= dt;
+      if (this.timerCountdown <= 0) {
+        this.timer--;
+        this.timerCountdown = 1.0;
+      }
+    }
+  }
+
+  draw(ctx, p1, p2) {
+    ctx.save();
+
+    const barWidth = 420;
+    const barHeight = 22;
+    const topY = 40;
+
+    // --- P1 HEALTH BAR (LEFT) ---
+    const p1StartX = 60;
+    // Base Frame
+    ctx.fillStyle = 'rgba(10, 14, 23, 0.85)';
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(p1StartX, topY, barWidth, barHeight, [8, 0, 0, 8]);
+    ctx.fill();
+    ctx.stroke();
+
+    // Damage Lag (Yellow-Red Drain)
+    const p1LagWidth = (p1.displayHp / p1.maxHp) * barWidth;
+    ctx.fillStyle = '#ff5500';
+    ctx.beginPath();
+    ctx.roundRect(p1StartX, topY, p1LagWidth, barHeight, [8, 0, 0, 8]);
+    ctx.fill();
+
+    // Current HP Fill (Cyan-White Gradient)
+    const p1HpWidth = (p1.hp / p1.maxHp) * barWidth;
+    const p1Grad = ctx.createLinearGradient(p1StartX, topY, p1StartX + p1HpWidth, topY);
+    p1Grad.addColorStop(0, '#00f0ff');
+    p1Grad.addColorStop(1, '#ffffff');
+    ctx.fillStyle = p1Grad;
+    ctx.shadowColor = '#00f0ff';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.roundRect(p1StartX, topY, p1HpWidth, barHeight, [8, 0, 0, 8]);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // P1 Name & Round Win Icons
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px var(--font-cyber)';
+    ctx.fillText(p1.name, p1StartX + 5, topY - 8);
+    for (let i = 0; i < 2; i++) {
+      ctx.fillStyle = i < p1.roundsWon ? '#00f0ff' : 'rgba(255,255,255,0.2)';
+      ctx.shadowColor = i < p1.roundsWon ? '#00f0ff' : 'transparent';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(p1StartX + 120 + i * 20, topY - 12, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    // --- P2 HEALTH BAR (RIGHT) ---
+    const p2StartX = V_WIDTH - 60 - barWidth;
+    // Base Frame
+    ctx.fillStyle = 'rgba(10, 14, 23, 0.85)';
+    ctx.strokeStyle = 'rgba(255, 0, 85, 0.4)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(p2StartX, topY, barWidth, barHeight, [0, 8, 8, 0]);
+    ctx.fill();
+    ctx.stroke();
+
+    // Damage Lag (Right to Left)
+    const p2LagWidth = (p2.displayHp / p2.maxHp) * barWidth;
+    ctx.fillStyle = '#ff5500';
+    ctx.beginPath();
+    ctx.roundRect(p2StartX + (barWidth - p2LagWidth), topY, p2LagWidth, barHeight, [0, 8, 8, 0]);
+    ctx.fill();
+
+    // Current HP Fill (Crimson Gradient)
+    const p2HpWidth = (p2.hp / p2.maxHp) * barWidth;
+    const p2Grad = ctx.createLinearGradient(p2StartX + barWidth, topY, p2StartX + (barWidth - p2HpWidth), topY);
+    p2Grad.addColorStop(0, '#ff0055');
+    p2Grad.addColorStop(1, '#ff88aa');
+    ctx.fillStyle = p2Grad;
+    ctx.shadowColor = '#ff0055';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.roundRect(p2StartX + (barWidth - p2HpWidth), topY, p2HpWidth, barHeight, [0, 8, 8, 0]);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // P2 Name & Round Icons
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 15px var(--font-cyber)';
+    ctx.textAlign = 'right';
+    ctx.fillText(p2.name, p2StartX + barWidth - 5, topY - 8);
+    for (let i = 0; i < 2; i++) {
+      ctx.fillStyle = i < p2.roundsWon ? '#ff0055' : 'rgba(255,255,255,0.2)';
+      ctx.shadowColor = i < p2.roundsWon ? '#ff0055' : 'transparent';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(p2StartX + barWidth - 120 - i * 20, topY - 12, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.textAlign = 'left';
+    ctx.shadowBlur = 0;
+
+    // --- ROUND TIMER (CENTER) ---
+    ctx.save();
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(V_WIDTH / 2, topY + 12, 28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 22px var(--font-cyber)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.timer, V_WIDTH / 2, topY + 13);
+    ctx.restore();
+
+    // --- SHADOW ENERGY METERS (BOTTOM) ---
+    this.drawEnergyBar(ctx, 80, V_HEIGHT - 35, p1.energy, '#00f0ff', 'SHADOW [SPACE]');
+    this.drawEnergyBar(ctx, V_WIDTH - 280, V_HEIGHT - 35, p2.energy, '#ff0055', 'SHADOW [4]');
+
+    // --- COMBO ANNOUNCEMENTS ---
+    if (p1.comboCounter > 1) {
+      this.drawComboText(ctx, 160, 200, p1.comboCounter, '#00f0ff');
+    }
+    if (p2.comboCounter > 1) {
+      this.drawComboText(ctx, V_WIDTH - 240, 200, p2.comboCounter, '#ff0055');
+    }
+
+    ctx.restore();
+  }
+
+  drawEnergyBar(ctx, x, y, energy, color, label) {
+    const w = 200;
+    const h = 8;
+    const isFull = energy >= 100;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.strokeStyle = isFull ? color : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillRect(x, y, w, h);
+
+    const fillW = (energy / 100) * w;
+    ctx.fillStyle = color;
+    if (isFull) {
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+    }
+    ctx.fillRect(x, y, fillW, h);
+    ctx.shadowBlur = 0;
+
+    ctx.fillStyle = isFull ? '#ffffff' : '#64748b';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(label + (isFull ? ' · READY' : ''), x, y - 5);
+  }
+
+  drawComboText(ctx, x, y, hits, color) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '900 32px var(--font-cyber)';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 18;
+    ctx.fillText(hits + " HITS!", x, y);
+
+    ctx.font = 'bold 14px var(--font-cyber)';
+    ctx.fillStyle = color;
+    const title = hits > 4 ? "INSANE COMBO!" : (hits > 2 ? "GREAT COMBO!" : "NICE!");
+    ctx.fillText(title, x, y + 22);
+    ctx.restore();
+  }
+}
+
+const HUD = new HUDRenderer();
+
+/* =============================================================================
+ * MASTER GAME CONTROLLER & STATE MANAGER
+ * ============================================================================= */
+class GameManager {
+  constructor() {
+    this.state = GameState.MENU;
+    this.mode = GameMode.VERSUS_AI;
+    this.p1 = new Fighter(true);
+    this.p2 = new Fighter(false);
+    this.p1.setOpponent(this.p2);
+    this.p2.setOpponent(this.p1);
+
+    this.ai = new AIController(this.p2, 'MEDIUM');
+    this.round = 1;
+    this.maxRounds = 3;
+    this.roundTransitionTimer = 0;
+    this.announcementText = '';
+    this.announcementSub = '';
+    this.announcementAlpha = 0;
+
+    this.lastTime = performance.now();
+    this.setupUI();
+  }
+
+  setupUI() {
+    // Menu buttons
+    document.getElementById('btn-play-ai').addEventListener('click', () => {
+      this.startMatch(GameMode.VERSUS_AI);
+    });
+    document.getElementById('btn-play-2p').addEventListener('click', () => {
+      this.startMatch(GameMode.LOCAL_2P);
+    });
+    document.getElementById('btn-training').addEventListener('click', () => {
+      this.startMatch(GameMode.TRAINING);
+    });
+
+    // Move List & Controls Modal
+    const movesModal = document.getElementById('moves-modal');
+    const toggleMovesModal = () => {
+      const isVisible = movesModal.style.display === 'flex';
+      movesModal.style.display = isVisible ? 'none' : 'flex';
+      if (isVisible) movesModal.classList.remove('active');
+      else movesModal.classList.add('active');
+    };
+
+    const btnSeeControls = document.getElementById('btn-see-controls');
+    if (btnSeeControls) btnSeeControls.addEventListener('click', toggleMovesModal);
+    const btnMovesMenu = document.getElementById('btn-moves-menu');
+    if (btnMovesMenu) btnMovesMenu.addEventListener('click', toggleMovesModal);
+    const btnControlsPause = document.getElementById('btn-controls-pause');
+    if (btnControlsPause) btnControlsPause.addEventListener('click', toggleMovesModal);
+    const btnCloseMoves = document.getElementById('btn-close-moves');
+    if (btnCloseMoves) btnCloseMoves.addEventListener('click', () => {
+      movesModal.style.display = 'none';
+      movesModal.classList.remove('active');
+    });
+
+    // Global Hotkeys for Controls & Pause (C, H, P, Escape)
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (k === 'c' || k === 'h') {
+        toggleMovesModal();
+      } else if (k === 'p' || k === 'escape') {
+        if (movesModal.style.display === 'flex') {
+          movesModal.style.display = 'none';
+          movesModal.classList.remove('active');
+        } else {
+          this.togglePause();
+        }
+      }
+    });
+
+    // Pause Handling
+    const pauseMenu = document.getElementById('pause-menu');
+    document.getElementById('btn-pause').addEventListener('click', () => {
+      this.togglePause();
+    });
+    document.getElementById('btn-resume').addEventListener('click', () => {
+      this.togglePause();
+    });
+    document.getElementById('btn-restart-round').addEventListener('click', () => {
+      pauseMenu.style.display = 'none';
+      pauseMenu.classList.remove('active');
+      this.resetRound();
+      this.state = GameState.PLAYING;
+    });
+    document.getElementById('btn-quit-main').addEventListener('click', () => {
+      pauseMenu.style.display = 'none';
+      pauseMenu.classList.remove('active');
+      this.returnToMenu();
+    });
+
+    // Sound toggle
+    document.getElementById('btn-sound').addEventListener('click', () => {
+      const isMuted = Audio.toggleMute();
+      document.getElementById('btn-sound').textContent = isMuted ? '🔇' : '🔊';
+    });
+
+    // Game Over Rematch
+    document.getElementById('btn-rematch').addEventListener('click', () => {
+      document.getElementById('game-over-modal').style.display = 'none';
+      document.getElementById('game-over-modal').classList.remove('active');
+      this.startMatch(this.mode);
+    });
+    document.getElementById('btn-post-menu').addEventListener('click', () => {
+      document.getElementById('game-over-modal').style.display = 'none';
+      document.getElementById('game-over-modal').classList.remove('active');
+      this.returnToMenu();
+    });
+  }
+
+  togglePause() {
+    if (this.state === GameState.PLAYING) {
+      this.state = GameState.PAUSED;
+      const pm = document.getElementById('pause-menu');
+      pm.style.display = 'flex';
+      pm.classList.add('active');
+    } else if (this.state === GameState.PAUSED) {
+      this.state = GameState.PLAYING;
+      const pm = document.getElementById('pause-menu');
+      pm.style.display = 'none';
+      pm.classList.remove('active');
+    }
+  }
+
+  returnToMenu() {
+    this.state = GameState.MENU;
+    document.getElementById('main-menu').style.display = 'flex';
+    document.getElementById('main-menu').classList.add('active');
+  }
+
+  startMatch(mode) {
+    this.mode = mode;
+    this.round = 1;
+    this.p1.roundsWon = 0;
+    this.p2.roundsWon = 0;
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('main-menu').classList.remove('active');
+
+    if (mode === GameMode.TRAINING) {
+      this.p2.name = "DUMMY";
+    } else {
+      this.p2.name = mode === GameMode.VERSUS_AI ? "NIGHTFALL" : "PLAYER 2";
+    }
+
+    this.resetRound();
+    this.showAnnouncement("ROUND " + this.round, "FIGHT!");
+  }
+
+  resetRound() {
+    this.p1.reset(400);
+    this.p2.reset(880);
+    HUD.timer = 99;
+    this.state = GameState.PLAYING;
+  }
+
+  showAnnouncement(main, sub) {
+    this.announcementText = main;
+    this.announcementSub = sub;
+    this.announcementAlpha = 1.0;
+  }
+
+  handlePlayerInput(dt) {
+    if (this.state !== GameState.PLAYING) return;
+
+    // --- PLAYER 1 CONTROLS (WASD + J/K/L/U) ---
+    const p1 = this.p1;
+    if (p1.state !== 'HIT' && p1.state !== 'KNOCKDOWN' && p1.state !== 'SHADOW_ULT') {
+      const wantSlash = Inputs.wasJustPressed('j');
+      const wantKick = Inputs.wasJustPressed('k');
+      const wantDash = Inputs.wasJustPressed('l');
+      const wantUlt = Inputs.wasJustPressed('u') || Inputs.wasJustPressed('i') || Inputs.wasJustPressed(' ');
+      const wantJump = Inputs.wasJustPressed('w');
+
+      const isHoldingFwd = (Inputs.isDown('d') && p1.facing === 1) || (Inputs.isDown('a') && p1.facing === -1);
+      const isHoldingBack = (Inputs.isDown('a') && p1.facing === 1) || (Inputs.isDown('d') && p1.facing === -1);
+      const isHoldingDown = Inputs.isDown('s');
+      const isHoldingUp = Inputs.isDown('w');
+
+      // Slash Attacks & Combo Chains
+      if (wantSlash) {
+        if (!p1.isGrounded) {
+          p1.triggerAttack('AERIAL_DIVE');
+        } else if (isHoldingUp) {
+          p1.triggerAttack('UPPERCUT_SLASH');
+        } else if (isHoldingDown) {
+          p1.triggerAttack('LOW_SWEEP');
+        } else if (isHoldingFwd) {
+          p1.triggerAttack('THRUST');
+        } else {
+          // Check multi-hit chain
+          if (p1.state === 'ATTACK' && p1.comboWindowOpen && p1.currentAttack) {
+            if (p1.currentAttack.key === 'JAB_1') p1.triggerAttack('JAB_2');
+            else if (p1.currentAttack.key === 'JAB_2') p1.triggerAttack('JAB_3');
+          } else {
+            p1.triggerAttack('JAB_1');
+          }
+        }
+      }
+      // Kick Attacks
+      else if (wantKick) {
+        if (isHoldingDown) {
+          p1.triggerAttack('LOW_SWEEP');
+        } else {
+          p1.triggerAttack('KICK');
+        }
+      }
+      // Shadow Magic / Ultimate
+      else if (wantUlt) {
+        p1.triggerAttack('SHADOW_ULT');
+      }
+      // Dash / Roll
+      else if (wantDash) {
+        const dashDir = Inputs.isDown('a') ? -1 : (Inputs.isDown('d') ? 1 : p1.facing);
+        p1.triggerDash(dashDir);
+      }
+      // Antigravity Wall Jump or Ground Jump
+      else if (wantJump) {
+        if (p1.canWallJump) {
+          const wallDir = p1.x <= 90 ? 1 : -1;
+          p1.vx = wallDir * 13;
+          p1.vy = -15;
+          p1.facing = wallDir;
+          p1.canWallJump = false;
+          Audio.playDash();
+          Particles.createHitSparks(p1.x, p1.y - 60, p1.accentColor, 12, 6);
+          Particles.createGhost(p1.rig, p1.facing, p1.accentColor);
+        } else if (p1.isGrounded) {
+          p1.vy = -16.5; // Antigravity high float jump
+          p1.isGrounded = false;
+          Audio.playDash();
+        }
+      }
+      // Locomotion & Guarding (when not attacking)
+      else if (p1.state !== 'ATTACK') {
+        if (isHoldingDown && p1.isGrounded) {
+          p1.state = 'CROUCH';
+        } else if (isHoldingBack && p1.isGrounded) {
+          p1.state = 'BLOCK';
+          p1.vx = p1.facing * -2.5; // Defensive backpedal
+        } else if (isHoldingFwd && p1.isGrounded) {
+          p1.state = 'MOVE';
+          p1.vx = p1.facing * 5.8;
+        } else if (p1.state === 'MOVE' || p1.state === 'CROUCH' || p1.state === 'BLOCK') {
+          p1.state = 'IDLE';
+        }
+      }
+    }
+
+    // --- PLAYER 2 CONTROLS (Only in LOCAL_2P Mode) ---
+    if (this.mode === GameMode.LOCAL_2P) {
+      const p2 = this.p2;
+      if (p2.state !== 'HIT' && p2.state !== 'KNOCKDOWN' && p2.state !== 'SHADOW_ULT') {
+        const p2Slash = Inputs.wasJustPressed('1') || Inputs.wasJustPressed('Numpad1');
+        const p2Kick = Inputs.wasJustPressed('2') || Inputs.wasJustPressed('Numpad2');
+        const p2Dash = Inputs.wasJustPressed('3') || Inputs.wasJustPressed('Numpad3');
+        const p2Ult = Inputs.wasJustPressed('4') || Inputs.wasJustPressed('Numpad4');
+        const p2Jump = Inputs.wasJustPressed('ArrowUp');
+
+        const p2HoldingFwd = (Inputs.isDown('ArrowRight') && p2.facing === 1) || (Inputs.isDown('ArrowLeft') && p2.facing === -1);
+        const p2HoldingBack = (Inputs.isDown('ArrowLeft') && p2.facing === 1) || (Inputs.isDown('ArrowRight') && p2.facing === -1);
+        const p2HoldingDown = Inputs.isDown('ArrowDown');
+
+        if (p2Slash) {
+          if (!p2.isGrounded) p2.triggerAttack('AERIAL_DIVE');
+          else if (Inputs.isDown('ArrowUp')) p2.triggerAttack('UPPERCUT_SLASH');
+          else if (p2HoldingDown) p2.triggerAttack('LOW_SWEEP');
+          else if (p2HoldingFwd) p2.triggerAttack('THRUST');
+          else {
+            if (p2.state === 'ATTACK' && p2.comboWindowOpen && p2.currentAttack) {
+              if (p2.currentAttack.key === 'JAB_1') p2.triggerAttack('JAB_2');
+              else if (p2.currentAttack.key === 'JAB_2') p2.triggerAttack('JAB_3');
+            } else {
+              p2.triggerAttack('JAB_1');
+            }
+          }
+        } else if (p2Kick) {
+          if (p2HoldingDown) p2.triggerAttack('LOW_SWEEP');
+          else p2.triggerAttack('KICK');
+        } else if (p2Ult) {
+          p2.triggerAttack('SHADOW_ULT');
+        } else if (p2Dash) {
+          p2.triggerDash(p2.facing);
+        } else if (p2Jump) {
+          if (p2.canWallJump) {
+            const wallDir = p2.x <= 90 ? 1 : -1;
+            p2.vx = wallDir * 13;
+            p2.vy = -15;
+            p2.facing = wallDir;
+            p2.canWallJump = false;
+            Audio.playDash();
+            Particles.createGhost(p2.rig, p2.facing, p2.accentColor);
+          } else if (p2.isGrounded) {
+            p2.vy = -16.5;
+            p2.isGrounded = false;
+            Audio.playDash();
+          }
+        } else if (p2.state !== 'ATTACK') {
+          if (p2HoldingDown && p2.isGrounded) {
+            p2.state = 'CROUCH';
+          } else if (p2HoldingBack && p2.isGrounded) {
+            p2.state = 'BLOCK';
+            p2.vx = p2.facing * -2.5;
+          } else if (p2HoldingFwd && p2.isGrounded) {
+            p2.state = 'MOVE';
+            p2.vx = p2.facing * 5.8;
+          } else if (p2.state === 'MOVE' || p2.state === 'CROUCH' || p2.state === 'BLOCK') {
+            p2.state = 'IDLE';
+          }
+        }
+      }
+    } else if (this.mode === GameMode.VERSUS_AI) {
+      this.ai.update(dt, this.p1);
+    }
+
+    // In TRAINING mode: Dummy regenerates health automatically
+    if (this.mode === GameMode.TRAINING) {
+      if (this.p2.hp < this.p2.maxHp * 0.4) {
+        this.p2.hp = this.p2.maxHp;
+        this.p2.displayHp = this.p2.maxHp;
+      }
+    }
+  }
+
+  checkRoundEnd() {
+    if (this.state !== GameState.PLAYING) return;
+
+    let roundWinner = null;
+    if (this.p1.hp <= 0 || (HUD.timer <= 0 && this.p1.hp < this.p2.hp)) {
+      roundWinner = this.p2;
+    } else if (this.p2.hp <= 0 || (HUD.timer <= 0 && this.p2.hp < this.p1.hp)) {
+      roundWinner = this.p1;
+    }
+
+    if (roundWinner) {
+      this.state = GameState.ROUND_OVER;
+      roundWinner.roundsWon++;
+      Cam.triggerHitStop(0.5, 0.1);
+      Cam.triggerShake(16);
+
+      const isMatchOver = roundWinner.roundsWon >= 2;
+      this.showAnnouncement(
+        isMatchOver ? "K.O. - VICTORY" : "K.O.",
+        roundWinner.name + " TAKES THE ROUND!"
+      );
+
+      setTimeout(() => {
+        if (isMatchOver) {
+          this.state = GameState.GAME_OVER;
+          const modal = document.getElementById('game-over-modal');
+          document.getElementById('winner-banner').textContent = roundWinner.name + " WINS!";
+          document.getElementById('winner-sub').textContent = "SUPREME SHADOW MASTER";
+          modal.style.display = 'flex';
+          modal.classList.add('active');
+        } else {
+          this.round++;
+          this.resetRound();
+          this.showAnnouncement("ROUND " + this.round, "FIGHT!");
+        }
+      }, 2200);
+    }
+  }
+
+  update(dt) {
+    // Camera slow-motion scaling
+    const gameDt = dt * Cam.slowMo;
+
+    Inputs.update(gameDt);
+    BG.update();
+    Particles.update(gameDt);
+    Cam.update(this.p1, this.p2, gameDt);
+    HUD.update(gameDt, this.state === GameState.PLAYING);
+
+    this.handlePlayerInput(gameDt);
+    this.p1.update(gameDt, this.p2);
+    this.p2.update(gameDt, this.p1);
+
+    this.checkRoundEnd();
+
+    // Announcement Alpha Fade
+    if (this.announcementAlpha > 0) {
+      this.announcementAlpha -= dt * 0.45;
+    }
+  }
+
+  draw() {
+    CTX.clearRect(0, 0, V_WIDTH, V_HEIGHT);
+
+    // Apply Dynamic Camera Zoom & Shake
+    Cam.apply(CTX);
+
+    // Parallax Atmospheric Background
+    BG.draw(CTX);
+
+    // Particles & Shadows behind fighters
+    Particles.draw(CTX);
+
+    // Render Silhouettes
+    this.p1.draw(CTX);
+    this.p2.draw(CTX);
+
+    Cam.restore(CTX);
+
+    // Static Screen HUD
+    HUD.draw(CTX, this.p1, this.p2);
+
+    // Large Center Announcement Text ("ROUND 1", "FIGHT!", "K.O.")
+    if (this.announcementAlpha > 0.05) {
+      CTX.save();
+      CTX.globalAlpha = Math.min(1.0, this.announcementAlpha);
+      CTX.textAlign = 'center';
+      CTX.textBaseline = 'middle';
+
+      // Glow behind text
+      CTX.font = '900 64px var(--font-cyber)';
+      CTX.fillStyle = '#ffffff';
+      CTX.shadowColor = '#00f0ff';
+      CTX.shadowBlur = 30;
+      CTX.fillText(this.announcementText, V_WIDTH / 2, V_HEIGHT / 2 - 20);
+
+      CTX.font = 'bold 24px var(--font-cyber)';
+      CTX.fillStyle = '#00f0ff';
+      CTX.shadowColor = '#00f0ff';
+      CTX.shadowBlur = 15;
+      CTX.fillText(this.announcementSub, V_WIDTH / 2, V_HEIGHT / 2 + 35);
+      CTX.restore();
+    }
+  }
+
+  loop(currentTime) {
+    const rawDt = (currentTime - this.lastTime) / 1000;
+    this.lastTime = currentTime;
+    const dt = Math.min(rawDt, 0.05); // Delta-time clamping for stability
+
+    this.update(dt);
+    this.draw();
+
+    requestAnimationFrame((t) => this.loop(t));
+  }
+}
+
+// Start Game Instance
+window.addEventListener('DOMContentLoaded', () => {
+  const Game = new GameManager();
+  requestAnimationFrame((t) => Game.loop(t));
+});
+</script>
+</body>
+</html>
