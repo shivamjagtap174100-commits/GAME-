@@ -45,6 +45,21 @@ A high-performance, polished, 2D silhouette fighting game inspired by **Shadow F
 | **Guard / Parry** | Hold <kbd>Back</kbd> | Mitigate 85% damage with metallic sparks |
 | **Command Manual** | <kbd>C</kbd> / <kbd>H</kbd> | Toggle on-screen controls modal |
 
+### Mobile & Tablet Touch Controls
+- **Left Thumb (D-Pad)**:
+  - <kbd>▲</kbd> Jump / Wall Rebound
+  - <kbd>◀</kbd> Move Left / Guard
+  - <kbd>▶</kbd> Move Right / Advance
+  - <kbd>▼</kbd> Crouch / Low Sweep
+- **Right Thumb (Action Cluster)**:
+  - <kbd>J</kbd> Primary Strike (Tap for 3-hit combo)
+  - <kbd>K</kbd> Kick Attack
+  - <kbd>DASH</kbd> Shadow Dash / Roll
+  - <kbd>KI</kbd> Void Execution (Shadow Art)
+- **Top Quick Bar**:
+  - <kbd>📱</kbd> Manual Touch Controls Toggle
+  - <kbd>⛶</kbd> Fullscreen Mode
+
 ### Player 2 (Local PvP)
 - **Move / Jump / Crouch**: <kbd>Arrow Keys</kbd>
 - **Strike**: <kbd>1</kbd> or <kbd>Numpad 1</kbd>
