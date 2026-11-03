@@ -1,4 +1,4 @@
-# SHADOW BLADE: ANTIGRAVITY ⚔️
+# SHADOW BLADE ⚔️
 
 A high-performance, polished, 2D silhouette fighting game inspired by **Shadow Fight**, crafted entirely in vanilla JavaScript and HTML5 Canvas with procedural Web Audio sound synthesis.
 
@@ -82,3 +82,4 @@ Visit `http://localhost:8080` in your browser.
 
 ## 📜 License
 MIT License. Feel free to modify, expand, and share!
+
